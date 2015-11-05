@@ -45,8 +45,8 @@ int main(int argc, char *argv[])
 	while(((option = getopt(argc, argv,"s:E:b:t:")) != -1)) {
 		switch(option){
 			case 's': 
-				set=pow(2,atoi(optarg));
-				printf("S %d ",set); // for testing
+				set=pow(2,atoi(optarg));		
+			printf("S %d ",set); // for testing
 				break;
 			case 'E': 
 				lines= atoi(optarg);
@@ -95,8 +95,14 @@ int main(int argc, char *argv[])
 		sets[i] = malloc(sizeof(line) * lines);
 	  } 
 	// Free Memory
+	for(i = 0; i < set; i++)
+	{
+		free(sets[i]);
+	}
+	
+	free(sets);
 
     /* Output the hit and miss statistics for the autograder */
-    printSummary(hit_count, miss_count, eviction_count);
+//    printSummary(hit_count, miss_count, eviction_count);
     return 0;
 }
