@@ -31,78 +31,136 @@
 int miss_count = 0;
 int hit_count = 0;
 int eviction_count = 0;
-unsigned long long int lru_counter = 1;
+unsigned long long int lru_counter = 0;
 
 /* Main Program */
 int main(int argc, char *argv[])
 {
-	int option,set,block,lines;
-	char *fileName;
-	FILE *myFile;
+	int option,s,b,lines,size; //input options
+	int set, block; //For bit shifting
+	char *fileName; //name of file to open
+	FILE *myFile; 
+	char  ch;       //Storage of action element of input
+	int t;      	//Number of Tag bits to shift
+	int hit=0; 	//To determine if a Hit has occured bool var not available
+	int evict, oldest; //To determine which address to evict based on LRU
+	unsigned long long int address; //Address from file
+	unsigned long long int temp, setNum,addrTag; //needed for address calculation
+	int unused =-1;  //Used for index in cache to find unused line
 
+	//Structures for cache elements
+        typedef struct {
+                int validBit;  //0 if no address present, 1 if address present
+                unsigned long long int tag; //calculated tag for the stored address
+                unsigned long long int LRU; //value for replacement policy
+        } lineStr;
+
+        typedef struct {
+        	lineStr *line;          //pointer to array of lines
+        } setStr;
+
+        typedef struct {
+                setStr *sets;	//point to array of sets
+        } cacheStr;
 
 	// Parse Options using getopts
 	while(((option = getopt(argc, argv,"s:E:b:t:")) != -1)) {
 		switch(option){
 			case 's': 
-				set=pow(2,atoi(optarg));		
-			printf("S %d ",set); // for testing
+				s=atoi(optarg);
+				set=pow(2,s);
 				break;
 			case 'E': 
 				lines= atoi(optarg);
-				printf("E %d ",lines); // for testing
-                        	break;
+	                 	break;
 			case 'b': 
-				block=pow(2,atoi(optarg));
-				printf("B %d ",block); // for testing
-                        	break;
+				b = atoi(optarg);
+				block=pow(2,b);
+	                      	break;
 			case 't': 
 				fileName=optarg;
-				myFile =fopen(fileName,"rw");
-				printf("File open %s",fileName); // for testing
-                        	fclose(myFile);
-				break;
+	    			break;
 			default:
+				printf("Invalid option input. Exiting program.");
+				exit(-1);
 				break;
 		}
-
-
-
 	}
 	// Check all required info is there
-	 if(set <= 0 || lines <= 0 || block <= 0 || fileName == NULL)
-        {
-                printf("Invalid or missing arguments\n");
-                exit(-1);
-        }
-	
-	// Initialize Cache using malloc
-	typedef struct
-	{ 
-	   int valid;
-	   void *tag;
-	   int lru;
-	} line;
-
-	    
-	line **sets;
-	
-	sets = malloc(sizeof(line*) * set);
-	
-	int i;
-	for(i = 0; i < set; i++)
-	  {
-		sets[i] = malloc(sizeof(line) * lines);
-	  } 
-	// Free Memory
-	for(i = 0; i < set; i++)
-	{
-		free(sets[i]);
+	if(s == 0 || lines==0 || b == 0 || fileName ==NULL) {
+		printf("Missing input neccessary for computation.");
 	}
-	
-	free(sets);
+	myFile =fopen(fileName,"r");
 
+	// Initialize Cache using malloc
+		
+   	cacheStr cache;
+   	cache.sets = malloc(sizeof(setStr) * set);
+ 	int i;
+  	for (i = 0; i < set; i++ ) {
+      		cache.sets[i].line = malloc( sizeof (lineStr) * block);
+   	}	
+	//Read the input and store in for use
+	while(fscanf(myFile, " %c %llx, %d", &ch, &address, &size) !=EOF) {
+		//reset variables
+                unused =-1;
+                hit = 0;	
+		evict =0;
+		oldest = 9999;
+		
+// M will have a hit for the S so we automatically add a hit and go through the testing
+		if ( ch == 'M')
+			hit_count++;
+		if ( ch !='I') {
+			t = 64 -( s + b);
+			addrTag = address >> (s + b);
+			temp = address << t;
+			setNum = temp >> (t + b);
+			setStr cacheSet=cache.sets[setNum];
+			for(i=0; i<lines;i++) {
+				if (cacheSet.line[i].validBit ==1) {
+					if (cacheSet.line[i].tag == addrTag) {
+						cacheSet.line[i].LRU =lru_counter;
+						hit =1;
+						hit_count++;
+						cacheSet.line[i].LRU=lru_counter;
+						lru_counter++;
+					}
+					else if (cacheSet.line[i].LRU < oldest) {
+						evict=i;
+						oldest= cacheSet.line[i].LRU;	
+					}
+				}
+				 //set to first unused space
+				else if (unused == -1) {	
+					unused =i;
+				}
+			}
+			//check if there was a miss if so do further testing
+			if (hit !=1) {
+				miss_count++;
+				if(unused > -1) {
+					cacheSet.line[unused].validBit =1;
+					cacheSet.line[unused].tag=addrTag;
+					cacheSet.line[unused].LRU=lru_counter;
+				}
+				//Evict if no availabe spots to fill
+				else if( unused < 0) {
+					cacheSet.line[evict].tag=addrTag;
+					cacheSet.line[evict].LRU=lru_counter;
+					eviction_count++;
+				}
+				lru_counter++;
+			}
+		}	
+	
+	}	
+	// Free Memory
+	free(cache.sets);
+	fclose(myFile);
+	
     /* Output the hit and miss statistics for the autograder */
-//    printSummary(hit_count, miss_count, eviction_count);
+    printSummary(hit_count, miss_count, eviction_count);
     return 0;
 }
+
