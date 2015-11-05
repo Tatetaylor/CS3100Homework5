@@ -70,9 +70,30 @@ int main(int argc, char *argv[])
 
 	}
 	// Check all required info is there
+	 if(set <= 0 || lines <= 0 || block <= 0 || fileName == NULL)
+        {
+                printf("Invalid or missing arguments\n");
+                exit(-1);
+        }
 	
 	// Initialize Cache using malloc
+	typedef struct
+	{ 
+	   int valid;
+	   void *tag;
+	   int lru;
+	} line;
+
+	    
+	line **sets;
 	
+	sets = malloc(sizeof(line*) * set);
+	
+	int i;
+	for(i = 0; i < set; i++)
+	  {
+		sets[i] = malloc(sizeof(line) * lines);
+	  } 
 	// Free Memory
 
     /* Output the hit and miss statistics for the autograder */
