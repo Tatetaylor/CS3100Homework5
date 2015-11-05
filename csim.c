@@ -37,25 +37,27 @@ unsigned long long int lru_counter = 0;
 int main(int argc, char *argv[])
 {
 	int option,s,b,lines,size; //input options
-	int set, block;
+	int set, block; //For bit shifting
 	char *fileName; //name of file to open
-	FILE *myFile;
-	char  ch;
-	int t;      	//Tag bits
-	int hit=0; 	//To determine if a Hit has occured
+	FILE *myFile; 
+	char  ch;       //Storage of action element of input
+	int t;      	//Number of Tag bits to shift
+	int hit=0; 	//To determine if a Hit has occured bool var not available
+	int evict, oldest; //To determine which address to evict based on LRU
 	unsigned long long int address; //Address from file
-	unsigned long long int temp, setNum,addrTag;
-	int unused =-1;
+	unsigned long long int temp, setNum,addrTag; //needed for address calculation
+	int unused =-1;  //Used for index in cache to find unused line
 
+	//Structures for cache elements
         typedef struct {
-                int validBit;
-                unsigned long long int tag;
-                unsigned long long int LRU;
-        }lineStr;
+                int validBit;  //0 if no address present, 1 if address present
+                unsigned long long int tag; //calculated tag for the stored address
+                unsigned long long int LRU; //value for replacement policy
+        } lineStr;
 
         typedef struct {
         	lineStr *line;          //pointer to array of lines
-        }setStr;
+        } setStr;
 
         typedef struct {
                 setStr *sets;	//point to array of sets
@@ -79,6 +81,8 @@ int main(int argc, char *argv[])
 				fileName=optarg;
 	    			break;
 			default:
+				printf("Invalid option input. Exiting program.");
+				exit(-1);
 				break;
 		}
 	}
@@ -87,6 +91,7 @@ int main(int argc, char *argv[])
 		printf("Missing input neccessary for computation.");
 	}
 	myFile =fopen(fileName,"r");
+
 	// Initialize Cache using malloc
 		
    	cacheStr cache;
@@ -95,9 +100,17 @@ int main(int argc, char *argv[])
   	for (i = 0; i < set; i++ ) {
       		cache.sets[i].line = malloc( sizeof (lineStr) * block);
    	}	
-	while(fscanf(myFile, " %c %llx, %d", &ch, &address, &size) ==3) {
-		int evict =0;
-		int oldest = 99;
+	//Read the input and store in for use
+	while(fscanf(myFile, " %c %llx, %d", &ch, &address, &size) !=EOF) {
+		//reset variables
+                unused =-1;
+                hit = 0;	
+		evict =0;
+		oldest = 9999;
+		
+// M will have a hit for the S so we automatically add a hit and go through the testing
+		if ( ch == 'M')
+			hit_count++;
 		if ( ch !='I') {
 			t = 64 -( s + b);
 			addrTag = address >> (s + b);
@@ -118,10 +131,12 @@ int main(int argc, char *argv[])
 						oldest= cacheSet.line[i].LRU;	
 					}
 				}
-				else if (unused == -1) {	//set to first unused space
+				 //set to first unused space
+				else if (unused == -1) {	
 					unused =i;
 				}
 			}
+			//check if there was a miss if so do further testing
 			if (hit !=1) {
 				miss_count++;
 				if(unused > -1) {
@@ -137,11 +152,6 @@ int main(int argc, char *argv[])
 				}
 				lru_counter++;
 			}
-		
-		if (ch =='M')
-			hit_count++;
-		unused =-1;
-		hit = 0;
 		}	
 	
 	}	
