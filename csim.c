@@ -61,16 +61,17 @@ int main(int argc, char *argv[])
         } Cache;
 
 	// Parse Options using getopts
-	while(((option = getopt(argc, argv,"s:E:b:t")) != -1)) {
+	while(((option = getopt(argc, argv,"s:E:b:t:")) != -1)) {
 		switch(option){
 			case 's': 
-				set=pow(2,atoi(optarg));
+				set=atoi(optarg);
 				break;
 			case 'E': 
 				lines= atoi(optarg);
 	                 	break;
 			case 'b': 
-				block=pow(2,atoi(optarg));
+				block=atoi(optarg);
+
 	                      	break;
 			case 't': 
 				fileName=optarg;
@@ -82,21 +83,24 @@ int main(int argc, char *argv[])
 	// Check all required info is there
 	if(set == 0 || lines==0 || block == 0 || fileName ==NULL)
 		printf("Missing input neccessary for computation.");
-
+	
 	myFile =fopen(fileName,"r");
+	int S = 1<<set;
+	int Block = 1<<block;
 	// Initialize Cache using malloc
    	Cache cache;
-   	cache.sets = malloc( set * sizeof(Cache));
+   	cache.sets = malloc( S * sizeof(Cache));
  	int i;
-  	for (i = 0; i < set; i++ ) {
-      		cache.sets[i].line = malloc( sizeof (lineStr) * block);
+  	for (i = 0; i < S; i++ ) {
+      		cache.sets[i].line = malloc( sizeof (lineStr) * Block);
    	}
-		
+	
 	while(fscanf(myFile, " %c %llx,%d",&ch, &address, &size) ==3) {
+
 		int evict =0;
 		int oldest = 99;
 		if ( ch !='I') {
-			t = 64 - set + block;
+			t = 64 - (set + block);
 			addrTag = address >> (set + block);
 			temp = address << t;
 			setNum = temp >> (t + block);
@@ -143,7 +147,7 @@ int main(int argc, char *argv[])
 	fclose(myFile);
 	
     /* Output the hit and miss statistics for the autograder */
-//    printSummary(hit_count, miss_count, eviction_count);
+    printSummary(hit_count, miss_count, eviction_count);
     return 0;
 }
 
