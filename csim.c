@@ -49,19 +49,19 @@ int main(int argc, char *argv[])
         typedef struct {
                 int validBit;
                 unsigned long long int tag;
-                int LRU;
+                unsigned long long int LRU;
         }lineStr;
 
         typedef struct {
-        lineStr *line;          //pointer to array of lines
-        }Set;
+        	lineStr *line;          //pointer to array of lines
+        }setStr;
 
         typedef struct {
-                Set *sets;	//point to array of sets
-        } Cache;
+                setStr *sets;	//point to array of sets
+        } cacheStr;
 
 	// Parse Options using getopts
-	while(((option = getopt(argc, argv,"s:E:b:t")) != -1)) {
+	while(((option = getopt(argc, argv,"s:E:b:t:")) != -1)) {
 		switch(option){
 			case 's': 
 				set=pow(2,atoi(optarg));
@@ -80,34 +80,34 @@ int main(int argc, char *argv[])
 		}
 	}
 	// Check all required info is there
-	if(set == 0 || lines==0 || block == 0 || fileName ==NULL)
+	if(set == 0 || lines==0 || block == 0 || fileName ==NULL) {
 		printf("Missing input neccessary for computation.");
-
+	}
 	myFile =fopen(fileName,"r");
 	// Initialize Cache using malloc
-	
-   	Cache cache;
-   	cache.sets = malloc( set * sizeof(Cache));
+		
+   	cacheStr cache;
+   	cache.sets = malloc(sizeof(setStr) * set);
  	int i;
   	for (i = 0; i < set; i++ ) {
       		cache.sets[i].line = malloc( sizeof (lineStr) * block);
-   	}
-		
-	while(fscanf(myFile, " %c %llx,%d",&ch, &address, &size) ==3) {
+   	}	
+	while(fscanf(myFile, " %c %llx, %d", &ch, &address, &size) ==3) {
 		int evict =0;
 		int oldest = 99;
 		if ( ch !='I') {
-			t = 64 - set + block;
+			t = 64 -( set + block);
 			addrTag = address >> (set + block);
 			temp = address << t;
 			setNum = temp >> (t + block);
-			Set cacheSet=cache.sets[setNum];
+			setStr cacheSet=cache.sets[setNum];
 			for(i=0; i<lines;i++) {
 				if (cacheSet.line[i].validBit ==1) {
 					if (cacheSet.line[i].tag == addrTag) {
 						cacheSet.line[i].LRU =lru_counter;
 						hit =1;
 						hit_count++;
+						cacheSet.line[i].LRU=lru_counter;
 						lru_counter++;
 					}
 					else if (cacheSet.line[i].LRU < oldest) {
@@ -115,30 +115,33 @@ int main(int argc, char *argv[])
 						oldest= cacheSet.line[i].LRU;	
 					}
 				}
-				else if (unused == -1)	//set to first unused space
+				else if (unused == -1) {	//set to first unused space
 					unused =i;
-				if (hit !=1) {
-					miss_count++;
-					if(unused > -1) {
-						cacheSet.line[unused].validBit =1;
-						cacheSet.line[unused].tag=addrTag;
-						cacheSet.line[unused].LRU=lru_counter;
-					}
-					//Evict if no availabe spots to fill
-					else if( unused < 0) {
-						cacheSet.line[evict].tag=addrTag;
-						cacheSet.line[evict].LRU=lru_counter;
-						eviction_count++;
-					}
-					lru_counter++;
 				}
-		}
+			}
+			if (hit !=1) {
+				miss_count++;
+				if(unused > -1) {
+					cacheSet.line[unused].validBit =1;
+					cacheSet.line[unused].tag=addrTag;
+					cacheSet.line[unused].LRU=lru_counter;
+				}
+				//Evict if no availabe spots to fill
+				else if( unused < 0) {
+					cacheSet.line[evict].tag=addrTag;
+					cacheSet.line[evict].LRU=lru_counter;
+					eviction_count++;
+				}
+				lru_counter++;
+			}
+		
 		if (ch =='M')
 			hit_count++;
 		unused =-1;
 		hit = 0;
 		}	
-	}
+	
+	}	
 	// Free Memory
 	free(cache.sets);
 	fclose(myFile);
