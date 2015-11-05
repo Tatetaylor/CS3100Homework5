@@ -36,7 +36,7 @@ unsigned long long int lru_counter = 1;
 /* Main Program */
 int main(int argc, char *argv[])
 {
-	int option,set,block,lines;
+	int option,set,block,lines,s,b;
 	char *fileName;
 	FILE *myFile;
 
@@ -44,23 +44,23 @@ int main(int argc, char *argv[])
 	// Parse Options using getopts
 	while(((option = getopt(argc, argv,"s:E:b:t:")) != -1)) {
 		switch(option){
-			case 's': 
-				set=pow(2,atoi(optarg));		
-			printf("S %d ",set); // for testing
+			case 's':
+				s = atoi(optarg); 
+				set=pow(2,s);		
+				printf("S %d ",set); // for testing
 				break;
 			case 'E': 
 				lines= atoi(optarg);
 				printf("E %d ",lines); // for testing
                         	break;
 			case 'b': 
-				block=pow(2,atoi(optarg));
+				b = atoi(optarg);
+				block=pow(2,b);
 				printf("B %d ",block); // for testing
                         	break;
 			case 't': 
 				fileName=optarg;
-				myFile =fopen(fileName,"rw");
 				printf("File open %s",fileName); // for testing
-                        	fclose(myFile);
 				break;
 			default:
 				break;
@@ -93,7 +93,39 @@ int main(int argc, char *argv[])
 	for(i = 0; i < set; i++)
 	  {
 		sets[i] = malloc(sizeof(line) * lines);
-	  } 
+	  }
+	
+	int block_mask = 1 << b - 1;
+
+	char * in = NULL;
+	size_t len = 0;
+	ssize_t read;
+	myFile = fopen(fileName,"rw");
+        if (myFile == NULL)
+           exit(EXIT_FAILURE);
+
+       	while ((read = getline(&in, &len, myFile)) != -1) 
+	{
+        	if(strncmp(in,"I",1) == 0)
+		{
+			continue;
+		}
+		if(strncmp(in, " M ",3) == 0) 
+		{
+			// set flag that this is a M comand
+		}
+		// trim everything past the comma
+		char* end = strchr(in,',');
+		if(end != NULL)
+		{
+			end[0] = '\0';
+		}
+		char* mem = in;
+		printf("%s\n", mem+3); // for testing
+		
+       	}
+        fclose(myFile);
+ 
 	// Free Memory
 	for(i = 0; i < set; i++)
 	{
