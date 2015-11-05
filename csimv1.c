@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
 
 	myFile =fopen(fileName,"r");
 	// Initialize Cache using malloc
+	
    	Cache cache;
    	cache.sets = malloc( set * sizeof(Cache));
  	int i;
@@ -143,7 +144,7 @@ int main(int argc, char *argv[])
 	fclose(myFile);
 	
     /* Output the hit and miss statistics for the autograder */
-//    printSummary(hit_count, miss_count, eviction_count);
+    printSummary(hit_count, miss_count, eviction_count);
     return 0;
 }
 
