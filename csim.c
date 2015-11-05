@@ -36,7 +36,8 @@ unsigned long long int lru_counter = 0;
 /* Main Program */
 int main(int argc, char *argv[])
 {
-	int option,set,block,lines,size; //input options
+	int option,s,b,lines,size; //input options
+	int set, block;
 	char *fileName; //name of file to open
 	FILE *myFile;
 	char  ch;
@@ -64,13 +65,15 @@ int main(int argc, char *argv[])
 	while(((option = getopt(argc, argv,"s:E:b:t:")) != -1)) {
 		switch(option){
 			case 's': 
-				set=pow(2,atoi(optarg));
+				s=atoi(optarg);
+				set=pow(2,s);
 				break;
 			case 'E': 
 				lines= atoi(optarg);
 	                 	break;
 			case 'b': 
-				block=pow(2,atoi(optarg));
+				b = atoi(optarg);
+				block=pow(2,b);
 	                      	break;
 			case 't': 
 				fileName=optarg;
@@ -80,7 +83,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	// Check all required info is there
-	if(set == 0 || lines==0 || block == 0 || fileName ==NULL) {
+	if(s == 0 || lines==0 || b == 0 || fileName ==NULL) {
 		printf("Missing input neccessary for computation.");
 	}
 	myFile =fopen(fileName,"r");
@@ -96,10 +99,10 @@ int main(int argc, char *argv[])
 		int evict =0;
 		int oldest = 99;
 		if ( ch !='I') {
-			t = 64 -( set + block);
-			addrTag = address >> (set + block);
+			t = 64 -( s + b);
+			addrTag = address >> (s + b);
 			temp = address << t;
-			setNum = temp >> (t + block);
+			setNum = temp >> (t + b);
 			setStr cacheSet=cache.sets[setNum];
 			for(i=0; i<lines;i++) {
 				if (cacheSet.line[i].validBit ==1) {
